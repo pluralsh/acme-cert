@@ -1,0 +1,273 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.9.2
+  creationTimestamp: null
+  name: challengepayloads.webhook.acme.cert-manager.io
+spec:
+  group: webhook.acme.cert-manager.io
+  names:
+    kind: ChallengePayload
+    listKind: ChallengePayloadList
+    plural: challengepayloads
+    singular: challengepayload
+  scope: Namespaced
+  versions:
+  - name: cert
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          request:
+            description: Request describes the attributes for the ACME solver request
+            properties:
+              action:
+                description: Action is one of 'present' or 'cleanup'. If the action
+                  is 'present', the record will be presented with the solving service.
+                  If the action is 'cleanup', the record will be cleaned up with the
+                  solving service.
+                type: string
+              allowAmbientCredentials:
+                description: AllowAmbientCredentials advises webhook implementations
+                  that they can use 'ambient credentials' for authenticating with
+                  their respective DNS provider services. This field SHOULD be honoured
+                  by all DNS webhook implementations, but in certain instances where
+                  it does not make sense to honour this option, an implementation
+                  may ignore it.
+                type: boolean
+              config:
+                description: Config contains unstructured JSON configuration data
+                  that the webhook implementation can unmarshal in order to fetch
+                  secrets or configure connection details etc. Secret values should
+                  not be passed in this field, in favour of references to Kubernetes
+                  Secret resources that the webhook can fetch.
+                x-kubernetes-preserve-unknown-fields: true
+              dnsName:
+                description: DNSName is the name of the domain that is actually being
+                  validated, as requested by the user on the Certificate resource.
+                  This will be of the form 'example.com' from normal hostnames, and
+                  '*.example.com' for wildcards.
+                type: string
+              key:
+                description: Key is the key that should be presented. This key will
+                  already be signed by the account that owns the challenge. For DNS01,
+                  this is the key that should be set for the TXT record for ResolveFQDN.
+                type: string
+              resolvedFQDN:
+                description: ResolvedFQDN is the fully-qualified domain name that
+                  should be updated/presented after resolving all CNAMEs. This should
+                  be honoured when using the DNS01 solver type. This will be of the
+                  form '_acme-challenge.example.com.'.
+                type: string
+              resolvedZone:
+                description: ResolvedZone is the zone encompassing the ResolvedFQDN.
+                  This is included as part of the ChallengeRequest so that webhook
+                  implementers do not need to implement their own SOA recursion logic.
+                  This indicates the zone that the provided FQDN is encompassed within,
+                  determined by performing SOA record queries for each part of the
+                  FQDN until an authoritative zone is found. This will be of the form
+                  'example.com.'.
+                type: string
+              resourceNamespace:
+                description: ResourceNamespace is the namespace containing resources
+                  that are referenced in the providers config. If this request is
+                  solving for an Issuer resource, this will be the namespace of the
+                  Issuer. If this request is solving for a ClusterIssuer resource,
+                  this will be the configured 'cluster resource namespace'
+                type: string
+              type:
+                description: Type is the type of ACME challenge. Only dns-01 is currently
+                  supported.
+                type: string
+              uid:
+                description: UID is an identifier for the individual request/response.
+                  It allows us to distinguish instances of requests which are otherwise
+                  identical (parallel requests, requests when earlier requests did
+                  not modify etc) The UID is meant to track the round trip (request/response)
+                  between the KAS and the WebHook, not the user request. It is suitable
+                  for correlating log entries between the webhook and apiserver, for
+                  either auditing or debugging.
+                type: string
+            required:
+            - action
+            - allowAmbientCredentials
+            - dnsName
+            - key
+            - resourceNamespace
+            - type
+            - uid
+            type: object
+          response:
+            description: Response describes the attributes for the ACME solver response
+            properties:
+              status:
+                description: Result contains extra details into why a challenge request
+                  failed. This field will be completely ignored if 'success' is true.
+                properties:
+                  apiVersion:
+                    description: 'APIVersion defines the versioned schema of this
+                      representation of an object. Servers should convert recognized
+                      schemas to the latest internal value, and may reject unrecognized
+                      values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                    type: string
+                  code:
+                    description: Suggested HTTP return code for this status, 0 if
+                      not set.
+                    format: int32
+                    type: integer
+                  details:
+                    description: Extended data associated with the reason.  Each reason
+                      may define its own extended details. This field is optional
+                      and the data returned is not guaranteed to conform to any schema
+                      except that defined by the reason type.
+                    properties:
+                      causes:
+                        description: The Causes array includes more details associated
+                          with the StatusReason failure. Not all StatusReasons may
+                          provide detailed causes.
+                        items:
+                          description: StatusCause provides more information about
+                            an api.Status failure, including cases when multiple errors
+                            are encountered.
+                          properties:
+                            field:
+                              description: "The field of the resource that has caused
+                                this error, as named by its JSON serialization. May
+                                include dot and postfix notation for nested attributes.
+                                Arrays are zero-indexed.  Fields may appear more than
+                                once in an array of causes due to fields having multiple
+                                errors. Optional. \n Examples: \"name\" - the field
+                                \"name\" on the current resource \"items[0].name\"
+                                - the field \"name\" on the first array entry in \"items\""
+                              type: string
+                            message:
+                              description: A human-readable description of the cause
+                                of the error.  This field may be presented as-is to
+                                a reader.
+                              type: string
+                            reason:
+                              description: A machine-readable description of the cause
+                                of the error. If this value is empty there is no information
+                                available.
+                              type: string
+                          type: object
+                        type: array
+                      group:
+                        description: The group attribute of the resource associated
+                          with the status StatusReason.
+                        type: string
+                      kind:
+                        description: 'The kind attribute of the resource associated
+                          with the status StatusReason. On some operations may differ
+                          from the requested resource Kind. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: The name attribute of the resource associated
+                          with the status StatusReason (when there is a single name
+                          which can be described).
+                        type: string
+                      retryAfterSeconds:
+                        description: If specified, the time in seconds before the
+                          operation should be retried. Some errors may indicate the
+                          client must take an alternate action - for those errors
+                          this field may indicate how long to wait before taking the
+                          alternate action.
+                        format: int32
+                        type: integer
+                      uid:
+                        description: 'UID of the resource. (when there is a single
+                          resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
+                        type: string
+                    type: object
+                  kind:
+                    description: 'Kind is a string value representing the REST resource
+                      this object represents. Servers may infer this from the endpoint
+                      the client submits requests to. Cannot be updated. In CamelCase.
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  message:
+                    description: A human-readable description of the status of this
+                      operation.
+                    type: string
+                  metadata:
+                    description: 'Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    properties:
+                      continue:
+                        description: continue may be set if the user set a limit on
+                          the number of items returned, and indicates that the server
+                          has more data available. The value is opaque and may be
+                          used to issue another request to the endpoint that served
+                          this list to retrieve the next set of available objects.
+                          Continuing a consistent list may not be possible if the
+                          server configuration has changed or more than a few minutes
+                          have passed. The resourceVersion field returned when using
+                          this continue value will be identical to the value in the
+                          first response, unless you have received this token from
+                          an error message.
+                        type: string
+                      remainingItemCount:
+                        description: remainingItemCount is the number of subsequent
+                          items in the list which are not included in this list response.
+                          If the list request contained label or field selectors,
+                          then the number of remaining items is unknown and the field
+                          will be left unset and omitted during serialization. If
+                          the list is complete (either because it is not chunking
+                          or because this is the last chunk), then there are no more
+                          remaining items and this field will be left unset and omitted
+                          during serialization. Servers older than v1.15 do not set
+                          this field. The intended use of the remainingItemCount is
+                          *estimating* the size of a collection. Clients should not
+                          rely on the remainingItemCount to be set or to be exact.
+                        format: int64
+                        type: integer
+                      resourceVersion:
+                        description: 'String that identifies the server''s internal
+                          version of this object that can be used by clients to determine
+                          when objects have changed. Value must be treated as opaque
+                          by clients and passed unmodified back to the server. Populated
+                          by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                        type: string
+                      selfLink:
+                        description: 'Deprecated: selfLink is a legacy read-only field
+                          that is no longer populated by the system.'
+                        type: string
+                    type: object
+                  reason:
+                    description: A machine-readable description of why this operation
+                      is in the "Failure" status. If this value is empty there is
+                      no information available. A Reason clarifies an HTTP status
+                      code but does not override it.
+                    type: string
+                  status:
+                    description: 'Status of the operation. One of: "Success" or "Failure".
+                      More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+                    type: string
+                type: object
+              success:
+                description: Success will be set to true if the request action (i.e.
+                  presenting or cleaning up) was successful.
+                type: boolean
+              uid:
+                description: UID is an identifier for the individual request/response.
+                  This should be copied over from the corresponding ChallengeRequest.
+                type: string
+            required:
+            - success
+            - uid
+            type: object
+        type: object
+    served: true
+    storage: true
